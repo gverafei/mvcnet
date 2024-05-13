@@ -1,20 +1,19 @@
-# Usa Node 20 alpine como la imagen padre
-FROM node:20-alpine
+# Usa dotnet como la imagen padre
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build-env
 
 # Se cambia al directorio /app dentro de la imagen
-WORKDIR /app
-
-# Copia los archivos package.json y package-lock.json al directorio /app de la imagen
-COPY package.json package-lock.json ./
-
-# Instala las dependencias
-RUN npm install
+WORKDIR /App
 
 # Copia todos los archivos a la imagen
-COPY . .
+COPY . ./
 
-# Pone la app en el puerto
-EXPOSE 3000
+# Restaura lo necesario
+RUN dotnet restore
+# Build y publica el release
+RUN dotnet publish -c Release -o out
 
-# Inicia la aplicacion
-CMD npm start
+# Construye la imagen
+FROM mcr.microsoft.com/dotnet/aspnet:8.0
+WORKDIR /App
+COPY --from=build-env /App/out .
+ENTRYPOINT ["dotnet", "DotNet.Docker.dll"]
